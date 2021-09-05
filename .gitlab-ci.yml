@@ -1,46 +1,48 @@
----
+# You can override the included template(s) by including variable overrides
+# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
+# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
+# Note that environment variables can be set in several places
+# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 image: registry.gitlab.com/aplus-framework/images/php
-
 include:
-  - template: Security/SAST.gitlab-ci.yml
-
+- template: Security/SAST.gitlab-ci.yml
+- template: Security/Dependency-Scanning.gitlab-ci.yml
 variables:
   SAST_EXCLUDED_PATHS: guide, tests, vendor
-
 test:php:
   stage: test
   cache:
     paths:
-      - build/
-      - vendor/
+    - build/
+    - vendor/
   before_script:
-    - composer install
+  - composer install
   script:
-    - composer normalize --dry-run --indent-size=4 --indent-style=space
-    - vendor/bin/php-cs-fixer fix --diff --dry-run --verbose
-    - vendor/bin/phpmd src xml phpmd.xml
-    - vendor/bin/phpstan analyse -vvv
-    - vendor/bin/phpunit --colors=never
-    - phpdoc
+  - composer normalize --dry-run --indent-size=4 --indent-style=space
+  - vendor/bin/php-cs-fixer fix --diff --dry-run --verbose
+  - vendor/bin/phpmd src xml phpmd.xml
+  - vendor/bin/phpstan analyse -vvv
+  - vendor/bin/phpunit --colors=never
+  - phpdoc
   artifacts:
     paths:
-      - build/coverage/
-      - build/docs/
-  coverage: '/^\s*Lines:\s*\d+.\d+\%/'
-
+    - build/coverage/
+    - build/docs/
+  coverage: "/^\\s*Lines:\\s*\\d+.\\d+\\%/"
 pages:
   stage: deploy
   dependencies:
-    - test:php
+  - test:php
   environment:
     name: production
     url: https://aplus-framework.gitlab.io
   script:
-    - mkdir public/
-    - mv build/coverage/ public/
-    - mv build/docs/ public/
+  - mkdir public/
+  - mv build/coverage/ public/
+  - mv build/docs/ public/
   artifacts:
     paths:
-      - public/
+    - public/
   only:
-    - master
+  - master
